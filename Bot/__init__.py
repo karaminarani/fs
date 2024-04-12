@@ -1,46 +1,56 @@
 import os
 import sys
+import datetime
 import logging
-import uvloop
 import base64
+import uvloop
 
 from pymongo import MongoClient
 
 from pyromod import Client
+from pyromod.helpers import ikb
 
+from pyrogram import idle
 from pyrogram.types import BotCommand
-from pyrogram.enums import ParseMode
+from pyrogram.enums import ChatType, ParseMode
 from pyrogram.errors import RPCError
 
-logging.basicConfig(handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()], level=logging.INFO)
+
+class Time:
+    def __init__(self, Local):
+        self.Local = Local
+
+    def Delta(self):
+        return datetime.datetime.utcnow() + datetime.timedelta(hours=self.Local)
+
+    def Convert(self, *args):
+        return self.Delta().timetuple()
+
+Local = Time(7)
 
 
-Logger = logging.getLogger("Bot")
+logging.Formatter.converter = Local.Convert
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", datefmt="%b %-d, %-I:%M %p", handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()], level=logging.INFO)
 
-TelegramApiID = 2040
-TelegramApiHash = "b18441a1ff607e10a989891a5462e627"
+logging.getLogger("pyrogram").setLevel(logging.ERROR)
+ClientLog = logging.getLogger("Client")
 
-TelegramBotToken = os.getenv("BOT_TOKEN")
-DatabaseChannelID = int(os.getenv("DATABASE_CHANNEL"))
+ApiID = 2040
+ApiHash = "b18441a1ff607e10a989891a5462e627"
 
-ListOfBotAdmins = [int(i) for i in os.getenv("BOT_ADMINS").split()]
+BotToken = os.getenv("BOT_TOKEN")
+DatabaseID = int(os.getenv("DATABASE_ID"))
 
-NumberOfMustJoinIDs = 1
-MustJoinID = {}
-while True:
-    key = f"FORCE_SUB_{NumberOfMustJoinIDs}"
-    value = os.environ.get(key)
-    if value is None:
-        break
-    MustJoinID[NumberOfMustJoinIDs] = int(value)
-    NumberOfMustJoinIDs += 1
+AdminIDs = [int(i) for i in os.getenv("ADMIN_IDS").split()]
 
-ProtectContent = eval(os.environ.get("PROTECT_CONTENT","True"))
+FSubIDs = [int(i) for i in os.environ.get("FSUB_IDS", "").split()]
+
+Protect = eval(os.environ.get("PROTECT_CONTENT","True"))
 
 MongoDBURL = os.environ.get("MONGODB_URL", "mongodb://root:passwd@mongo")
-MongoDBName = TelegramBotToken.split(":", 1)[0]
+MongoDBName = BotToken.split(":", 1)[0]
 
-CompleteListOfBotCommands = [
+BotCommands = [
     BotCommand("start", "Start Bot"),
     BotCommand("ping", "Bot Latency"),
     BotCommand("batch", "Batch Message"),
@@ -52,102 +62,126 @@ CompleteListOfBotCommands = [
     BotCommand("restart", "Restart Bot")
 ]
 
-ListOfBotCommands = [command.command for command in CompleteListOfBotCommands]
+Commands = [command.command for command in BotCommands]
+
+Branch = os.environ.get("BRANCH", "master")
 
 
 class UserDB:
-    def __init__(self, DatabaseURL, DatabaseName):
-        self.DatabaseClient = MongoClient(DatabaseURL)
-        self.DatabaseName = self.DatabaseClient[DatabaseName]
-        self.ListOfUserIDs = self.DatabaseName["users"]
+    def __init__(self, URL, Database):
+        self.Log = logging.getLogger("UserDB")
+        self.MongoClient = MongoClient(URL)
+        self.Database = self.MongoClient[Database]
+        self.UserIDs = self.Database["users"]
 
-    def Insert(self, user_id: int):
-        if not self.ListOfUserIDs.find_one({"_id": user_id}):
-            self.ListOfUserIDs.insert_one({"_id": user_id})
+    def Insert(self, UserID: int):
+        if not self.UserIDs.find_one({"_id": UserID}):
+            self.UserIDs.insert_one({"_id": UserID})
+            self.Log.info(f"Insert: {UserID}")
 
-    def AllUsers(self):
-        users = self.ListOfUserIDs.find()
-        user_id = [user["_id"] for user in users]
-        return user_id
+    def Users(self):
+        Users = self.UserIDs.find()
+        UserIDs = [User["_id"] for User in Users]
+        return UserIDs
 
-    def Delete(self, user_id: int):
-        self.ListOfUserIDs.delete_one({"_id": user_id})
+    def Delete(self, UserID: int):
+        self.UserIDs.delete_one({"_id": UserID})
+        self.Log.info(f"Delete: {UserID}")
 
 
 class URLSafe:
     @staticmethod
-    def Encode(data):
-        encoded_bytes = base64.urlsafe_b64encode(data.encode("utf-8"))
-        encoded_data = str(encoded_bytes, "utf-8").rstrip("=")
-        return encoded_data
+    def Encode(Data):
+        Encoder = base64.urlsafe_b64encode(Data.encode("utf-8"))
+        Encoded = str(Encoder, "utf-8").rstrip("=")
+        return Encoded
 
     @staticmethod
-    def Decode(data):
-        padding_factor = (4 - len(data) % 4) % 4
-        data += "=" * padding_factor
-        decoded_bytes = base64.urlsafe_b64decode(data)
-        decoded_data = str(decoded_bytes, "utf-8")
-        return decoded_data
+    def Decode(Data):
+        Padding = (4 - len(Data) % 4) % 4
+        Data += "=" * Padding
+        Decoder = base64.urlsafe_b64decode(Data)
+        Decoded = str(Decoder, "utf-8")
+        return Decoded
 
 
 class Bot(Client):
     def __init__(self):
         super().__init__(
             name="Bot",
+            api_id=ApiID,
+            api_hash=ApiHash,
+            bot_token=BotToken,
             in_memory=True,
-            api_id=TelegramApiID,
-            api_hash=TelegramApiHash,
-            bot_token=TelegramBotToken,
-            parse_mode=ParseMode.MARKDOWN,
-            plugins=dict(root="Bot/Plugins")
+            plugins=dict(root="Bot/Plugins"),
+            parse_mode=ParseMode.HTML
         )
 
-        self.Logger = Logger
+        self.Log = logging.getLogger("Bot")
         self.UserDB = UserDB(MongoDBURL, MongoDBName)
         self.URLSafe = URLSafe()
 
     async def start(self):
+        if os.path.exists("log.txt"):
+            with open("log.txt", "r+") as Log:
+                Log.truncate(0)
+
         if os.path.exists(".git"):
-            os.system("git fetch origin -q; git reset --hard origin/master -q")
+            ClientLog.info("Updating")
+            os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
+            ClientLog.info(f"Updated: {Branch}")
+
+        ClientLog.info("Deploying")
 
         uvloop.install()
 
         try:
             await super().start()
+            self.Button = ikb
+            self.Username = self.me.username
+            ClientLog.info(f"@{self.Username} Started")
         except RPCError as e:
-            logging.error(e)
+            ClientLog.error(e)
             sys.exit(1)
 
-        await self.set_bot_commands(CompleteListOfBotCommands)
+        await self.set_bot_commands(BotCommands)
 
         try:
-            hello_world = await self.send_message(chat_id=DatabaseChannelID, text="Hello World!")
-            await hello_world.delete()
+            Hello = await self.send_message(chat_id=DatabaseID, text="Hello World!")
+            await Hello.delete(revoke=True)
+            ClientLog.info("DATABASE: Passed")
         except RPCError as e:
-            self.Logger.error(f"DATABASE_CHANNEL: {e}")
+            ClientLog.error(f"DATABASE: {e}")
             sys.exit(1)
 
-        for key, chat_id in MustJoinID.items():
+        for key, chat_id in enumerate(FSubIDs):
             try:
-                get_chat = await self.get_chat(chat_id)
-                setattr(self, f"MustJoinID{key}", get_chat.invite_link)
+                Get = await self.get_chat(chat_id)
+                Link = Get.invite_link
+                setattr(self, f"FSub{key}", Link)
+                ClientLog.info(f"FSUB_{key + 1}: Passed")
             except RPCError as e:
-                self.Logger.error(f"FORCE_SUB_{key}: {e}")
+                ClientLog.error(f"FSUB_{key + 1}: {e}")
                 sys.exit(1)
 
         if os.path.exists("restart_id.txt"):
-            with open("restart_id.txt") as read:
-                chat_id, message_id = map(int, read)
+            with open("restart_id.txt") as Read:
+                chat_id, message_id = map(int, Read)
                 await self.edit_message_text(chat_id=chat_id, message_id=message_id, text="Bot has been restarted.")
             os.remove("restart_id.txt")
 
         if os.path.exists("broadcast_id.txt"):
-            with open("broadcast_id.txt") as read:
-                chat_id, message_id = map(int, read)
+            with open("broadcast_id.txt") as Read:
+                chat_id, message_id = map(int, Read)
                 await self.send_message(chat_id=chat_id, text="Bot restarted, broadcast has been aborted.", reply_to_message_id=message_id)
             os.remove("broadcast_id.txt")
 
+        ClientLog.info(f"@{self.Username}: Deployed")
+
+        await idle()
+
     async def stop(self, *args):
+        ClientLog.warning("Stopped")
         await super().stop()
         sys.exit()
 

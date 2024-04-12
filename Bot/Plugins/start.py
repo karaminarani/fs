@@ -4,83 +4,89 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, RPCError
 
-from pyromod.helpers import ikb
-
-from Bot import ListOfBotAdmins, DatabaseChannelID, MustJoinID, ProtectContent
+from Bot import AdminIDs, DatabaseID, FSubIDs, Protect
 
 
 @Client.on_message(filters.command("start"))
 async def Start(Bot, Msg):
-    BotStartMessage = "**The bot is up and running. These bots can store messages in custom channels, and users access them through the bot.**"
-    MustJoinMessage = "**\n\nTo view messages shared by bots. Join first, then press the Try Again button.**" 
+    UserID = Msg.from_user.id
 
-    Bot.UserDB.Insert(Msg.from_user.id)
+    Greeting = "<b>The bot is up and running. These bots can store messages in custom channels, and users access them through the bot.</b>"
+    Must = "<b>\n\nTo view messages shared by bots. Join first, then press the Try Again button.</b>" 
 
-    reply_markup = Buttons(Bot, Msg)
+    Bot.UserDB.Insert(UserID)
+
+    Button = Buttons(Bot, Msg)
     if len(Msg.command) > 1:
         if not await Subscriber(Bot, Msg):
-            await Msg.reply(BotStartMessage + MustJoinMessage, reply_markup=reply_markup, quote=True)
+            await Msg.reply(Greeting + Must, reply_markup=Button, quote=True)
         else:
-            message_ids = []
-            command_data = Bot.URLSafe.Decode(Msg.command[1]).split("-")
-            if len(command_data) == 3:
-                start, end = int(int(command_data[1]) / abs(DatabaseChannelID)), int(int(command_data[2]) / abs(DatabaseChannelID))
-                message_ids = range(start, end + 1) if start <= end else range(start, end - 1, -1)
-            elif len(command_data) == 2:
-                message_ids.append(int(int(command_data[1]) / abs(DatabaseChannelID)))
+            Process = await Msg.reply(text="...")
+            MessageIDs = []
+            Decoded = Bot.URLSafe.Decode(Msg.command[1]).split("-")
+            if len(Decoded) == 3:
+                Start, End = int(int(Decoded[1]) / abs(DatabaseID)), int(int(Decoded[2]) / abs(DatabaseID))
+                MessageIDs = range(Start, End + 1) if Start <= End else range(Start, End - 1, -1)
+            elif len(Decoded) == 2:
+                MessageIDs.append(int(int(Decoded[1]) / abs(DatabaseID)))
 
-            for msg in await Bot.get_messages(DatabaseChannelID, message_ids):
+            for Message in await Bot.get_messages(chat_id=DatabaseID, message_ids=MessageIDs):
                 try:
-                    await msg.copy(chat_id=Msg.from_user.id, protect_content=ProtectContent)
+                    await Message.copy(chat_id=UserID, protect_content=Protect)
                 except FloodWait as e:
-                    Bot.Logger.warning(f"START: {e}")
                     await asyncio.sleep(e.value)
-                    continue
+                    Bot.Log.warning(e)
+                except RPCError:
+                    pass
+
+            await Process.delete(revoke=True)
+
         return
     else:
-        await Msg.reply(BotStartMessage, reply_markup=reply_markup, quote=True)
+        await Msg.reply(text=Greeting, quote=True, reply_markup=Button)
 
 
-@Client.on_message(filters.command("restart") & filters.user(ListOfBotAdmins))
+@Client.on_message(filters.command("restart") & filters.user(AdminIDs))
 async def Restart(Bot, Msg):
-    restart_message_process = await Msg.reply("Restarting...", quote=True)
+    Bot.Log.info(f"Restart by {Msg.from_user.id}")
+
+    Process = await Msg.reply(text="Restarting...", quote=True)
 
     with open("restart_id.txt", "w") as restart_id:
-        restart_id.write(f"{Msg.chat.id}\n{restart_message_process.id}")
+        restart_id.write(f"{Msg.chat.id}\n{Process.id}")
 
-    subprocess.run(["python", "-m", "bot"])
+    subprocess.run(["python", "-m", "Bot"])
 
 
 def Buttons(Bot, Msg):
-    if MustJoinID:
-        dynamic_buttons = []
-        button_rows = []
-        for key in MustJoinID.keys():
-            button_rows.append((f"Join {key}", getattr(Bot, f"MustJoinID{key}"), "url"))
+    if FSubIDs:
+        Dynamic = []
+        Rows = []
+        for key, chat_id in enumerate(FSubIDs):
+            Rows.append((f"Join {key + 1}", getattr(Bot, f"FSub{key}"), "url"))
 
-            if len(button_rows) == 3:
-                dynamic_buttons.append(button_rows)
-                button_rows = []
+            if len(Rows) == 3:
+                Dynamic.append(Rows)
+                Rows = []
 
-        if button_rows:
-            dynamic_buttons.append(button_rows)
+        if Rows:
+            Dynamic.append(Rows)
 
         try:
-            dynamic_buttons.append([("Try Again", f"t.me/{Bot.me.username}?start={Msg.command[1]}", "url")])
+            Dynamic.append([("Try Again", f"t.me/{Bot.Username}?start={Msg.command[1]}", "url")])
         except Exception:
             pass
 
-        return ikb(dynamic_buttons)
+        return Bot.Button(Dynamic)
 
 
 async def Subscriber(Bot, Msg):
-    user_id = Msg.from_user.id
-    if user_id in ListOfBotAdmins:
+    UserID = Msg.from_user.id
+    if UserID in AdminIDs:
         return True
-
-    for key, chat_id in MustJoinID.items():
-        try: 
-            await Bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+    for key, chat_id in enumerate(FSubIDs):
+        try:
+            await Bot.get_chat_member(chat_id=chat_id, user_id=UserID)
         except RPCError:
             return False
 

@@ -4,83 +4,89 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, RPCError
 
-from Bot import ListOfBotAdmins, ProtectContent
+from Bot import AdminIDs, Protect
 
-BroadcastRunning, succeeded_sent, failed_sent, number_of_users = False, 0, 0, 0
+Running, Succeeded, Failed, Total = False, 0, 0, 0
 
 
-@Client.on_message(filters.command("broadcast") & filters.user(ListOfBotAdmins))
+@Client.on_message(filters.command("broadcast") & filters.user(AdminIDs))
 async def Broadcast(Bot, Msg):
-    global BroadcastRunning, succeeded_sent, failed_sent, number_of_users
+    AdminID = Msg.from_user.id
 
-    BroadcastRunningMessage = "Broadcast is running, wait until the task is finished.\n\n**/status:** Show broadcast status."
+    global Running, Succeeded, Failed, Total
 
-    if not (broadcast_message := Msg.reply_to_message):
-        await Msg.reply("Please reply to a message you want to broadcast.", quote=True)
+    Processing = "Broadcast is running, wait until the task is finished.\n\n<b>/status:</b> Show broadcast status."
+    Nothing = "No broadcast is running."
+
+    if not (BroadcastMessage := Msg.reply_to_message):
+        await Msg.reply(text="Please reply to a message you want to broadcast.", quote=True)
         return
     else:
-        if not BroadcastRunning:
-            BroadcastRunning, succeeded_sent, failed_sent, number_of_users = True, 0, 0, 0
+        if not Running:
+            Running, Succeeded, Failed, Total = True, 0, 0, 0
         else:
-            await Msg.reply(BroadcastRunningMessage, quote=True)
+            await Msg.reply(text=Processing, quote=True)
             return
 
-    broadcast_message_process = await Msg.reply("Sending...", quote=True)
+    Process = await Msg.reply(text="Sending...", quote=True)
 
     with open("broadcast_id.txt", "w") as broadcast_id:
-        broadcast_id.write(f"{Msg.chat.id}\n{broadcast_message_process.id}")
+        broadcast_id.write(f"{Msg.chat.id}\n{Process.id}")
 
-    all_users = Bot.UserDB.AllUsers()
-    number_of_users = len(all_users)
+    UserIDs = Bot.UserDB.Users()
+    Total = len(UserIDs)
 
-    for user_id in all_users:
-        if not BroadcastRunning:
+    Bot.Log.info(f"Broadcast by {AdminID}: Running")
+
+    for UserID in UserIDs:
+        if not Running:
             break
 
-        if user_id not in ListOfBotAdmins:
+        if UserID not in AdminIDs:
             try:
-                await broadcast_message.copy(chat_id=user_id, protect_content=ProtectContent)
-                succeeded_sent += 1
+                await BroadcastMessage.copy(chat_id=UserID, protect_content=Protect)
+                Succeeded += 1
             except FloodWait as e:
-                Bot.Logger.warning(f"BROADCAST: {e}")
                 await asyncio.sleep(e.value)
-                continue
+                Bot.Log.warning(e)
             except RPCError:
-                Bot.UserDB.Delete(user_id)
-                failed_sent += 1
+                Bot.UserDB.Delete(UserID)
+                Failed += 1
 
-            if (succeeded_sent + failed_sent) % 25 == 0:
-                await broadcast_message_process.edit(f"**Broadcast Running**\n - Sent: {succeeded_sent}/{number_of_users}\n - Failed: {failed_sent}\n\n**/cancel:** Cancel the process.")
+            if (Succeeded + Failed) % 25 == 0:
+                await Process.edit(text=f"<b>Broadcast Running</b>\n - Sent: {Succeeded}/{Total}\n - Failed: {Failed}\n\n<b>/cancel:</b> Cancel the process.")
 
-    if not BroadcastRunning:
-        await Msg.reply(f"**Broadcast Aborted**\n - Sent: {succeeded_sent}/{number_of_users}\n - Failed: {failed_sent}", quote=True)
+    if not Running:
+        await Msg.reply(text=f"<b>Broadcast Aborted</b>\n - Sent: {Succeeded}/{Total}\n - Failed: {Failed}", quote=True)
+        Bot.Log.warning(f"Broadcast by {AdminID}: Aborted (Sent: {Succeeded}/{Total} - Failed: {Failed})")
     else:
-        await Msg.reply(f"**Broadcast Finished**\n - Succeeded: {succeeded_sent}\n - Failed: {failed_sent}", quote=True)
+        await Msg.reply(text=f"<b>Broadcast Finished</b>\n - Succeeded: {Succeeded}\n - Failed: {Failed}", quote=True)
+        Bot.Log.info(f"Broadcast by {AdminID}: Finished (Sent: {Succeeded} - Failed: {Failed})")
 
-    await broadcast_message_process.delete()
+    await Process.delete(revoke=True)
 
     os.remove("broadcast_id.txt")
 
-    BroadcastRunning, succeeded_sent, failed_sent, number_of_users = False, 0, 0, 0
+    Running, Succeeded, Failed, Total = False, 0, 0, 0
 
 
-@Client.on_message(filters.command("status") & filters.user(ListOfBotAdmins))
+@Client.on_message(filters.command("status") & filters.user(AdminIDs))
 async def BroadcastStatus(_, Msg):
-    global BroadcastRunning, succeeded_sent, failed_sent, number_of_users
+    global Running, Succeeded, Failed, Total
 
-    if not BroadcastRunning:
-        await Msg.reply("No broadcast is running.", quote=True)
+    if not Running:
+        await Msg.reply(text=Nothing, quote=True)
     else:
-        await Msg.reply(f"**Broadcast Status**\n - Sent: {succeeded_sent}/{number_of_users}\n - Failed: {failed_sent}", quote=True)
+        await Msg.reply(text=f"<b>Broadcast Status</b>\n - Sent: {Succeeded}/{Total}\n - Failed: {Failed}", quote=True)
 
 
-@Client.on_message(filters.command("cancel") & filters.user(ListOfBotAdmins))
+@Client.on_message(filters.command("cancel") & filters.user(AdminIDs))
 async def CancelBroadcast(_, Msg):
-    global BroadcastRunning
+    global Running
 
-    if not BroadcastRunning:
-        await Msg.reply("No broadcast is running.", quote=True)
+    if not Running:
+        await Msg.reply(text=Nothing, quote=True)
         return
     else:
-        await Msg.reply("Broadcast has been aborted.", quote=True)
-        BroadcastRunning = False
+        await Msg.reply(text="Broadcast has been aborted.", quote=True)
+        Running = False
