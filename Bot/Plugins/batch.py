@@ -9,7 +9,7 @@ from Bot import ListOfBotAdmins, DatabaseChannelID
 async def Batch(Bot, Msg):
     InvalidBatchMessage= "The message is invalid or the message being forwarded is not from the DATABASE_CHANNEL."
 
-    initial_message = await Bot.ask(text="**Initial Message:** Forward message from DATABASE_CHANNEL.", chat_id=Msg.chat.id)
+    initial_message = await Bot.ask(chat_id=Msg.chat.id, text="**Initial Message:** Forward message from DATABASE_CHANNEL.", user_id=Msg.from_user.id)
     if initial_message.forward_from_chat and initial_message.forward_from_chat.id == DatabaseChannelID:
         initial_message_id = initial_message.forward_from_message_id
     else:
@@ -17,7 +17,7 @@ async def Batch(Bot, Msg):
         return
 
     while True:
-        last_message = await Bot.ask(text="**Last Message:** Forward message from DATABASE_CHANNEL.", chat_id=Msg.chat.id)
+        last_message = await Bot.ask(chat_id=Msg.chat.id, text="**Last Message:** Forward message from DATABASE_CHANNEL.", user_id=Msg.from_user.id)
         if last_message.forward_from_chat and last_message.forward_from_chat.id == DatabaseChannelID:
             last_message_id = last_message.forward_from_message_id
             break
