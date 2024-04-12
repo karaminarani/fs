@@ -15,13 +15,12 @@ async def Broadcast(Bot, Msg):
 
     BroadcastRunningMessage = "Broadcast is running, wait until the task is finished.\n\n**/status:** Show broadcast status."
 
-    if not Msg.reply_to_message:
+    if not (broadcast_message := Msg.reply_to_message):
         await Msg.reply("Please reply to a message you want to broadcast.", quote=True)
         return
     else:
         if not BroadcastRunning:
             BroadcastRunning, succeeded_sent, failed_sent, number_of_users = True, 0, 0, 0
-            broadcast_message = Msg.reply_to_message
         else:
             await Msg.reply(BroadcastRunningMessage, quote=True)
             return
