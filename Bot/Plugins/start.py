@@ -34,8 +34,9 @@ async def Start(Bot, Msg):
                 try:
                     await Message.copy(chat_id=UserID, protect_content=Protect)
                 except FloodWait as e:
-                    await asyncio.sleep(e.value)
                     Bot.Log.warning(e)
+                    Bot.Log.info(f"Sleep: {e.value}s")
+                    await asyncio.sleep(e.value + 5)
                 except RPCError:
                     pass
 

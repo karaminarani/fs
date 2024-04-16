@@ -3,6 +3,7 @@ import sys
 import datetime
 import logging
 import base64
+import asyncio
 import uvloop
 
 from pymongo import MongoClient
@@ -13,7 +14,7 @@ from pyromod.helpers import ikb
 from pyrogram import idle
 from pyrogram.types import BotCommand
 from pyrogram.enums import ChatType, ParseMode
-from pyrogram.errors import RPCError
+from pyrogram.errors import FloodWait, RPCError
 
 
 class Time:
@@ -139,6 +140,10 @@ class Bot(Client):
             self.Button = ikb
             self.Username = self.me.username
             ClientLog.info(f"@{self.Username} Started")
+        except FloodWait as e:
+            ClientLog.warning(e)
+            ClientLog.info(f"Sleep: {e.value}s")
+            await asyncio.sleep(e.value + 5)
         except RPCError as e:
             ClientLog.error(e)
             sys.exit(1)
@@ -149,6 +154,10 @@ class Bot(Client):
             Hello = await self.send_message(chat_id=DatabaseID, text="Hello World!")
             await Hello.delete(revoke=True)
             ClientLog.info("DATABASE: Passed")
+        except FloodWait as e:
+            ClientLog.warning(e)
+            ClientLog.info(f"Sleep: {e.value}s")
+            await asyncio.sleep(e.value + 5)
         except RPCError as e:
             ClientLog.error(f"DATABASE: {e}")
             sys.exit(1)
@@ -159,6 +168,10 @@ class Bot(Client):
                 Link = Get.invite_link
                 setattr(self, f"FSub{key}", Link)
                 ClientLog.info(f"FSUB_{key + 1}: Passed")
+            except FloodWait as e:
+                ClientLog.warning(e)
+                ClientLog.info(f"Sleep: {e.value}s")
+                await asyncio.sleep(e.value + 5)
             except RPCError as e:
                 ClientLog.error(f"FSUB_{key + 1}: {e}")
                 sys.exit(1)

@@ -47,8 +47,9 @@ async def Broadcast(Bot, Msg):
                 await Message.copy(chat_id=UserID, protect_content=Protect)
                 Succeeded += 1
             except FloodWait as e:
-                await asyncio.sleep(e.value)
                 Bot.Log.warning(e)
+                Bot.Log.info(f"Sleep: {e.value}s")
+                await asyncio.sleep(e.value + 5)
             except RPCError:
                 Bot.UserDB.Delete(UserID)
                 Failed += 1
