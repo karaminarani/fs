@@ -8,7 +8,7 @@ COPY . ./
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PIP_ROOT_USER_ACTION=ignore
 
-RUN pip install -qr \
+RUN pip install -q \
 pyrogram==2.0.106 \
 pyromod==3.1.6 \
 tgcrypto==1.2.5 \
