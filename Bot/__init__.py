@@ -31,7 +31,7 @@ Local = Time(7)
 
 
 logging.Formatter.converter = Local.Convert
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%b %-d, %-I:%M %p", handlers=[logging.FileHandler(".Log"), logging.StreamHandler()], level=logging.INFO)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%c", handlers=[logging.FileHandler(".Log"), logging.StreamHandler()], level=logging.INFO)
 
 logging.getLogger("pyrogram").setLevel(logging.ERROR)
 Logger = logging.getLogger(__name__)
