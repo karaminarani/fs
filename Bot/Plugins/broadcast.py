@@ -18,7 +18,7 @@ async def Broadcast(Bot, Msg):
     Processing = "Broadcast is running, wait until the task is finished.\n\n<b>/status:</b> Show broadcast status."
     Nothing = "No broadcast is running."
 
-    if not (BroadcastMessage := Msg.reply_to_message):
+    if not (Message := Msg.reply_to_message):
         await Msg.reply(text="Please reply to a message you want to broadcast.", quote=True)
         return
     else:
@@ -44,7 +44,7 @@ async def Broadcast(Bot, Msg):
 
         if UserID not in AdminIDs:
             try:
-                await BroadcastMessage.copy(chat_id=UserID, protect_content=Protect)
+                await Message.copy(chat_id=UserID, protect_content=Protect)
                 Succeeded += 1
             except FloodWait as e:
                 await asyncio.sleep(e.value)
