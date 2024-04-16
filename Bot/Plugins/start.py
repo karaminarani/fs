@@ -19,7 +19,7 @@ async def Start(Bot, Msg):
     Button = Buttons(Bot, Msg)
     if len(Msg.command) > 1:
         if not await Subscriber(Bot, Msg):
-            await Msg.reply(Greeting + Must, reply_markup=Button, quote=True)
+            await Msg.reply(text=Greeting + Must, reply_markup=Button, quote=True)
         else:
             Process = await Msg.reply(text="...")
             MessageIDs = []
