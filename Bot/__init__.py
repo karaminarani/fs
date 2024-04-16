@@ -31,10 +31,10 @@ Local = Time(7)
 
 
 logging.Formatter.converter = Local.Convert
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", datefmt="%b %-d, %-I:%M %p", handlers=[logging.FileHandler(".Log"), logging.StreamHandler()], level=logging.INFO)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%b %-d, %-I:%M %p", handlers=[logging.FileHandler(".Log"), logging.StreamHandler()], level=logging.INFO)
 
 logging.getLogger("pyrogram").setLevel(logging.ERROR)
-ClientLog = logging.getLogger("Client")
+Logger = logging.getLogger(__name__)
 
 ApiID = 2040
 ApiHash = "b18441a1ff607e10a989891a5462e627"
@@ -70,7 +70,6 @@ Branch = os.environ.get("BRANCH", "master")
 
 class UserDB:
     def __init__(self, URL, Database):
-        self.Log = logging.getLogger("UserDB")
         self.MongoClient = MongoClient(URL)
         self.Database = self.MongoClient[Database]
         self.UserIDs = self.Database["users"]
@@ -78,7 +77,7 @@ class UserDB:
     def Insert(self, UserID: int):
         if not self.UserIDs.find_one({"_id": UserID}):
             self.UserIDs.insert_one({"_id": UserID})
-            self.Log.info(f"Insert: {UserID}")
+            Logger.info(f"Insert: {UserID}")
 
     def Users(self):
         Users = self.UserIDs.find()
@@ -87,7 +86,7 @@ class UserDB:
 
     def Delete(self, UserID: int):
         self.UserIDs.delete_one({"_id": UserID})
-        self.Log.info(f"Delete: {UserID}")
+        Logger.info(f"Delete: {UserID}")
 
 
 class URLSafe:
@@ -118,7 +117,7 @@ class Bot(Client):
             parse_mode=ParseMode.HTML
         )
 
-        self.Log = logging.getLogger("Bot")
+        self.Log = Logger
         self.UserDB = UserDB(MongoDBURL, MongoDBName)
         self.URLSafe = URLSafe()
 
@@ -127,11 +126,11 @@ class Bot(Client):
             with open(".Log", "r+") as Log:
                 Log.truncate(0)
 
-        logging.info("Updating")
+        Logger.info("Updating")
         os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
-        logging.info(f"Updated: {Branch}")
+        Logger.info(f"Updated: {Branch}")
 
-        ClientLog.info("Deploying")
+        Logger.info("Deploying")
 
         uvloop.install()
 
@@ -139,13 +138,13 @@ class Bot(Client):
             await super().start()
             self.Button = ikb
             self.Username = self.me.username
-            ClientLog.info(f"@{self.Username} Started")
+            Logger.info(f"@{self.Username} Started")
         except FloodWait as e:
-            ClientLog.warning(e)
-            ClientLog.info(f"Sleep: {e.value}s")
+            Logger.warning(e)
+            Logger.info(f"Sleep: {e.value}s")
             await asyncio.sleep(e.value + 5)
         except RPCError as e:
-            ClientLog.error(e)
+            Logger.error(e)
             sys.exit(1)
 
         await self.set_bot_commands(BotCommands)
@@ -153,13 +152,13 @@ class Bot(Client):
         try:
             Hello = await self.send_message(chat_id=DatabaseID, text="Hello World!")
             await Hello.delete(revoke=True)
-            ClientLog.info("DATABASE: Passed")
+            Logger.info("DATABASE: Passed")
         except FloodWait as e:
-            ClientLog.warning(e)
-            ClientLog.info(f"Sleep: {e.value}s")
+            Logger.warning(e)
+            Logger.info(f"Sleep: {e.value}s")
             await asyncio.sleep(e.value + 5)
         except RPCError as e:
-            ClientLog.error(f"DATABASE: {e}")
+            Logger.error(f"DATABASE: {e}")
             sys.exit(1)
 
         for key, chat_id in enumerate(FSubIDs):
@@ -167,13 +166,13 @@ class Bot(Client):
                 Get = await self.get_chat(chat_id)
                 Link = Get.invite_link
                 setattr(self, f"FSub{key}", Link)
-                ClientLog.info(f"FSUB_{key + 1}: Passed")
+                Logger.info(f"FSUB_{key + 1}: Passed")
             except FloodWait as e:
                 ClientLog.warning(e)
                 ClientLog.info(f"Sleep: {e.value}s")
                 await asyncio.sleep(e.value + 5)
             except RPCError as e:
-                ClientLog.error(f"FSUB_{key + 1}: {e}")
+                Logger.error(f"FSUB_{key + 1}: {e}")
                 sys.exit(1)
 
         if os.path.exists(".RestartID"):
@@ -188,12 +187,12 @@ class Bot(Client):
                 await self.send_message(chat_id=ChatID, text="Bot restarted, broadcast has been aborted.", reply_to_message_id=MessageID)
             os.remove(".BroadcastID")
 
-        ClientLog.info(f"@{self.Username}: Deployed")
+        Logger.info(f"@{self.Username}: Deployed")
 
         await idle()
 
     async def stop(self, *args):
-        ClientLog.warning("Stopped")
+        Logger.warning("Stopped")
         await super().stop()
         sys.exit()
 
