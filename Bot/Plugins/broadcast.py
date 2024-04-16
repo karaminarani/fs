@@ -30,7 +30,7 @@ async def Broadcast(Bot, Msg):
 
     Process = await Msg.reply(text="Sending...", quote=True)
 
-    with open("broadcast_id.txt", "w") as BroadcastID:
+    with open(".BroadcastID", "w") as BroadcastID:
         BroadcastID.write(f"{Msg.chat.id}\n{Process.id}")
 
     UserIDs = Bot.UserDB.Users()
@@ -65,7 +65,7 @@ async def Broadcast(Bot, Msg):
 
     await Process.delete(revoke=True)
 
-    os.remove("broadcast_id.txt")
+    os.remove(".BroadcastID")
 
     Running, Succeeded, Failed, Total = False, 0, 0, 0
 

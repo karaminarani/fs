@@ -30,7 +30,7 @@ Local = Time(7)
 
 
 logging.Formatter.converter = Local.Convert
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", datefmt="%b %-d, %-I:%M %p", handlers=[logging.FileHandler("log.txt"), logging.StreamHandler()], level=logging.INFO)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", datefmt="%b %-d, %-I:%M %p", handlers=[logging.FileHandler(".Log"), logging.StreamHandler()], level=logging.INFO)
 
 logging.getLogger("pyrogram").setLevel(logging.ERROR)
 ClientLog = logging.getLogger("Client")
@@ -122,8 +122,8 @@ class Bot(Client):
         self.URLSafe = URLSafe()
 
     async def start(self):
-        if os.path.exists("log.txt"):
-            with open("log.txt", "r+") as Log:
+        if os.path.exists(".Log"):
+            with open(".Log", "r+") as Log:
                 Log.truncate(0)
 
         logging.info("Updating")
@@ -163,17 +163,17 @@ class Bot(Client):
                 ClientLog.error(f"FSUB_{key + 1}: {e}")
                 sys.exit(1)
 
-        if os.path.exists("restart_id.txt"):
-            with open("restart_id.txt") as Read:
+        if os.path.exists(".RestartID"):
+            with open(".RestartID") as Read:
                 ChatID, MessageID = map(int, Read)
                 await self.edit_message_text(chat_id=ChatID, message_id=MessageID, text="Bot has been restarted.")
-            os.remove("restart_id.txt")
+            os.remove(".RestartID")
 
-        if os.path.exists("broadcast_id.txt"):
-            with open("broadcast_id.txt") as Read:
+        if os.path.exists(".BroadcastID"):
+            with open(".BroadcastID") as Read:
                 ChatID, MessageID = map(int, Read)
                 await self.send_message(chat_id=ChatID, text="Bot restarted, broadcast has been aborted.", reply_to_message_id=MessageID)
-            os.remove("broadcast_id.txt")
+            os.remove(".BroadcastID")
 
         ClientLog.info(f"@{self.Username}: Deployed")
 

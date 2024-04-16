@@ -22,5 +22,5 @@ async def Users(Bot, Msg):
 @Client.on_message(filters.command("log") & filters.user(AdminIDs))
 async def Log(_, Msg):
     Process = await Msg.reply(text="...", quote=True)
-    await Msg.reply_document(document="log.txt", quote=True)
+    await Msg.reply_document(document=".Log", quote=True)
     await Process.delete(revoke=True)

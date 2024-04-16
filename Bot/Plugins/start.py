@@ -52,7 +52,7 @@ async def Restart(Bot, Msg):
 
     Process = await Msg.reply(text="Restarting...", quote=True)
 
-    with open("restart_id.txt", "w") as RestartID:
+    with open(".RestartID", "w") as RestartID:
         RestartID.write(f"{Msg.chat.id}\n{Process.id}")
 
     subprocess.run(["python", "-m", "Bot"])
