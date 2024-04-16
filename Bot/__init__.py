@@ -38,8 +38,8 @@ Logger = logging.getLogger(__name__)
 
 ApiID = 2040
 ApiHash = "b18441a1ff607e10a989891a5462e627"
-
 BotToken = os.getenv("BOT_TOKEN")
+
 DatabaseID = int(os.getenv("DATABASE_ID"))
 
 AdminIDs = [int(i) for i in os.getenv("ADMIN_IDS").split()]
@@ -54,18 +54,20 @@ MongoDBName = BotToken.split(":", 1)[0]
 BotCommands = [
     BotCommand("start", "Start Bot"),
     BotCommand("ping", "Bot Latency"),
-    BotCommand("batch", "Batch Message"),
-    BotCommand("broadcast", "Broadcast Message"),
-    BotCommand("cancel", "Cancel Broadcast"),
-    BotCommand("status", "Broadcast Status"),
-    BotCommand("users", "User Stats"),
-    BotCommand("log", "Bot Logs"),
-    BotCommand("restart", "Restart Bot")
+    BotCommand("batch", "Batch Message (Admin)"),
+    BotCommand("broadcast", "Broadcast Message (Admin)"),
+    BotCommand("cancel", "Cancel Broadcast (Admin)"),
+    BotCommand("status", "Broadcast Status (Admin)"),
+    BotCommand("users", "User Stats (Admin)"),
+    BotCommand("log", "Bot Logs (Admin)"),
+    BotCommand("restart", "Restart Bot (Admin)")
 ]
 
 Commands = [command.command for command in BotCommands]
 
 Branch = os.environ.get("BRANCH", "master")
+
+Version = "Released: Apr 16th, 2024"
 
 
 class UserDB:
@@ -128,7 +130,7 @@ class Bot(Client):
 
         Logger.info("Updating")
         os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
-        Logger.info(f"Updated: {Branch}")
+        Logger.info("Updated")
 
         Logger.info("Deploying")
 
@@ -138,7 +140,7 @@ class Bot(Client):
             await super().start()
             self.Button = ikb
             self.Username = self.me.username
-            Logger.info(f"@{self.Username} Started")
+            Logger.info(f"{self.me.id} Started")
         except FloodWait as e:
             Logger.warning(e)
             Logger.info(f"Sleep: {e.value}s")
@@ -187,7 +189,8 @@ class Bot(Client):
                 await self.send_message(chat_id=ChatID, text="Bot restarted, broadcast has been aborted.", reply_to_message_id=MessageID)
             os.remove(".BroadcastID")
 
-        Logger.info(f"@{self.Username}: Deployed")
+        Logger.info(Version)
+        Logger.info(f"{self.me.id} Deployed")
 
         await idle()
 
