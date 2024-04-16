@@ -71,7 +71,7 @@ async def Broadcast(Bot, Msg):
 
 
 @Client.on_message(filters.command("status") & filters.user(AdminIDs))
-async def BroadcastStatus(_, Msg):
+async def Status(_, Msg):
     global Running, Succeeded, Failed, Total
 
     if not Running:
@@ -81,7 +81,7 @@ async def BroadcastStatus(_, Msg):
 
 
 @Client.on_message(filters.command("cancel") & filters.user(AdminIDs))
-async def CancelBroadcast(_, Msg):
+async def Cancel(_, Msg):
     global Running
 
     if not Running:
