@@ -34,8 +34,7 @@ async def Start(Bot, Msg):
                 try:
                     await Message.copy(chat_id=UserID, protect_content=Protect)
                 except FloodWait as e:
-                    Bot.Log.warning(e)
-                    Bot.Log.info(f"Sleep: {e.value}s")
+                    Bot.Log.warning(f"FloodWait: Sleep {e.value}s")
                     await asyncio.sleep(e.value + 5)
                 except RPCError:
                     pass
@@ -49,7 +48,7 @@ async def Start(Bot, Msg):
 
 @Client.on_message(filters.command("restart") & filters.user(AdminIDs))
 async def Restart(Bot, Msg):
-    Bot.Log.info(f"Restart by {Msg.from_user.id}")
+    Bot.Log.info(f"Bot: Restarted by {Msg.from_user.id}")
 
     Process = await Msg.reply(text="Restarting...", quote=True)
 

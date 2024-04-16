@@ -16,4 +16,4 @@ async def Generate(Bot, Msg):
 
     await Process.edit(text=Generated, disable_web_page_preview=True, reply_markup=Button)
 
-    Bot.Log.info(f"Generate by {Msg.from_user.id}: {Generated}")
+    Bot.Log.info(f"Generated: {Generated} by {Msg.from_user.id}")

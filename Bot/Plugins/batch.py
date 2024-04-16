@@ -36,4 +36,4 @@ async def Batch(Bot, Msg):
 
     await Last.reply(text=Generated, quote=True, disable_web_page_preview=True, reply_markup=Button)
 
-    Bot.Log.info(f"Batch by {AdminID}: {Generated}")
+    Bot.Log.info(f"Batch: {Generated} by {AdminID}")

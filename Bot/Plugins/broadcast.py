@@ -36,7 +36,7 @@ async def Broadcast(Bot, Msg):
     UserIDs = Bot.UserDB.Users()
     Total = len(UserIDs)
 
-    Bot.Log.info(f"Broadcast by {AdminID}: Running")
+    Bot.Log.info(f"Broadcast: Started by {AdminID}")
 
     for UserID in UserIDs:
         if not Running:
@@ -47,8 +47,7 @@ async def Broadcast(Bot, Msg):
                 await Message.copy(chat_id=UserID, protect_content=Protect)
                 Succeeded += 1
             except FloodWait as e:
-                Bot.Log.warning(e)
-                Bot.Log.info(f"Sleep: {e.value}s")
+                Bot.Log.warning(f"FloodWait: Sleep {e.value}s")
                 await asyncio.sleep(e.value + 5)
             except RPCError:
                 Bot.UserDB.Delete(UserID)
@@ -59,10 +58,10 @@ async def Broadcast(Bot, Msg):
 
     if not Running:
         await Msg.reply(text=f"<b>Broadcast Aborted</b>\n - Sent: {Succeeded}/{Total}\n - Failed: {Failed}", quote=True)
-        Bot.Log.warning(f"Broadcast by {AdminID}: Aborted (Sent: {Succeeded}/{Total} - Failed: {Failed})")
+        Bot.Log.warning(f"Broadcast: Aborted (Sent: {Succeeded}/{Total} - Failed: {Failed}) by {AdminID}")
     else:
         await Msg.reply(text=f"<b>Broadcast Finished</b>\n - Succeeded: {Succeeded}\n - Failed: {Failed}", quote=True)
-        Bot.Log.info(f"Broadcast by {AdminID}: Finished (Sent: {Succeeded} - Failed: {Failed})")
+        Bot.Log.info(f"Broadcast: Finished (Sent: {Succeeded} - Failed: {Failed}) by {AdminID}")
 
     await Process.delete(revoke=True)
 

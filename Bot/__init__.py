@@ -79,7 +79,7 @@ class UserDB:
     def Insert(self, UserID: int):
         if not self.UserIDs.find_one({"_id": UserID}):
             self.UserIDs.insert_one({"_id": UserID})
-            Logger.info(f"Insert: {UserID}")
+            Logger.info(f"Database: Inserted {UserID}")
 
     def Users(self):
         Users = self.UserIDs.find()
@@ -88,7 +88,7 @@ class UserDB:
 
     def Delete(self, UserID: int):
         self.UserIDs.delete_one({"_id": UserID})
-        Logger.info(f"Delete: {UserID}")
+        Logger.info(f"Database: Deleted {UserID}")
 
 
 class URLSafe:
@@ -128,11 +128,12 @@ class Bot(Client):
             with open(".Log", "r+") as Log:
                 Log.truncate(0)
 
-        Logger.info("Updating")
-        os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
-        Logger.info("Updated")
+        if os.path.exists(".git"):
+            Logger.info("Repository: Updating")
+            os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
+            Logger.info("Repository: Updated")
 
-        Logger.info("Deploying")
+        Logger.info("Bot: Deploying")
 
         uvloop.install()
 
@@ -140,10 +141,9 @@ class Bot(Client):
             await super().start()
             self.Button = ikb
             self.Username = self.me.username
-            Logger.info(f"{self.me.id} Started")
+            Logger.info(f"@{self.Username}: Started")
         except FloodWait as e:
-            Logger.warning(e)
-            Logger.info(f"Sleep: {e.value}s")
+            Logger.warning(f"FloodWait: Sleep {e.value}s")
             await asyncio.sleep(e.value + 5)
         except RPCError as e:
             Logger.error(e)
@@ -156,8 +156,7 @@ class Bot(Client):
             await Hello.delete(revoke=True)
             Logger.info("DATABASE: Passed")
         except FloodWait as e:
-            Logger.warning(e)
-            Logger.info(f"Sleep: {e.value}s")
+            Logger.warning(f"FloodWait: Sleep {e.value}s")
             await asyncio.sleep(e.value + 5)
         except RPCError as e:
             Logger.error(f"DATABASE: {e}")
@@ -170,8 +169,7 @@ class Bot(Client):
                 setattr(self, f"FSub{key}", Link)
                 Logger.info(f"FSUB_{key + 1}: Passed")
             except FloodWait as e:
-                ClientLog.warning(e)
-                ClientLog.info(f"Sleep: {e.value}s")
+                Logger.warning(f"FloodWait: Sleep {e.value}s")
                 await asyncio.sleep(e.value + 5)
             except RPCError as e:
                 Logger.error(f"FSUB_{key + 1}: {e}")
@@ -190,12 +188,12 @@ class Bot(Client):
             os.remove(".BroadcastID")
 
         Logger.info(Version)
-        Logger.info(f"{self.me.id} Deployed")
+        Logger.info("Bot: Deployed")
 
         await idle()
 
     async def stop(self, *args):
-        Logger.warning("Stopped")
+        Logger.warning("Bot: Stopped")
         await super().stop()
         sys.exit()
 
