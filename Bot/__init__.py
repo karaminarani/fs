@@ -126,10 +126,9 @@ class Bot(Client):
             with open("log.txt", "r+") as Log:
                 Log.truncate(0)
 
-        if os.path.exists(".git"):
-            ClientLog.info("Updating")
-            os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
-            ClientLog.info(f"Updated: {Branch}")
+        logging.info("Updating")
+        os.system(f"git fetch origin -q; git reset --hard origin/{Branch} -q")
+        logging.info(f"Updated: {Branch}")
 
         ClientLog.info("Deploying")
 
@@ -166,14 +165,14 @@ class Bot(Client):
 
         if os.path.exists("restart_id.txt"):
             with open("restart_id.txt") as Read:
-                chat_id, message_id = map(int, Read)
-                await self.edit_message_text(chat_id=chat_id, message_id=message_id, text="Bot has been restarted.")
+                ChatID, MessageID = map(int, Read)
+                await self.edit_message_text(chat_id=ChatID, message_id=MessageID, text="Bot has been restarted.")
             os.remove("restart_id.txt")
 
         if os.path.exists("broadcast_id.txt"):
             with open("broadcast_id.txt") as Read:
-                chat_id, message_id = map(int, Read)
-                await self.send_message(chat_id=chat_id, text="Bot restarted, broadcast has been aborted.", reply_to_message_id=message_id)
+                ChatID, MessageID = map(int, Read)
+                await self.send_message(chat_id=ChatID, text="Bot restarted, broadcast has been aborted.", reply_to_message_id=MessageID)
             os.remove("broadcast_id.txt")
 
         ClientLog.info(f"@{self.Username}: Deployed")
