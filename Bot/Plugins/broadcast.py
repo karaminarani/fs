@@ -7,6 +7,7 @@ from pyrogram.errors import FloodWait, RPCError
 from Bot import AdminIDs, Protect
 
 Running, Succeeded, Failed, Total = False, 0, 0, 0
+Nothing = "No broadcast is running."
 
 
 @Client.on_message(filters.command("broadcast") & filters.user(AdminIDs))
@@ -16,7 +17,6 @@ async def Broadcast(Bot, Msg):
     global Running, Succeeded, Failed, Total
 
     Processing = "Broadcast is running, wait until the task is finished.\n\n<b>/status:</b> Show broadcast status."
-    Nothing = "No broadcast is running."
 
     if not (Message := Msg.reply_to_message):
         await Msg.reply(text="Please reply to a message you want to broadcast.", quote=True)
