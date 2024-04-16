@@ -30,8 +30,8 @@ async def Broadcast(Bot, Msg):
 
     Process = await Msg.reply(text="Sending...", quote=True)
 
-    with open("broadcast_id.txt", "w") as broadcast_id:
-        broadcast_id.write(f"{Msg.chat.id}\n{Process.id}")
+    with open("broadcast_id.txt", "w") as BroadcastID:
+        BroadcastID.write(f"{Msg.chat.id}\n{Process.id}")
 
     UserIDs = Bot.UserDB.Users()
     Total = len(UserIDs)
